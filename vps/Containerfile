@@ -1,7 +1,5 @@
 FROM quay.io/fedora/fedora-bootc:43
 
-ARG TARGETOS TARGETARCH
-
 # Set hostname
 RUN echo "great-henge" > /etc/hostname
 
@@ -22,4 +20,12 @@ COPY systemd/*.service /etc/systemd/system/
 
 # Enable the auto-connect service
 RUN systemctl enable tailscale-auth.service
+
+# Bake in root authorized_keys. CI fetches https://github.com/serisium.keys
+# into the build context; for local builds run `curl -fsSL https://github.com/serisium.keys -o vps/serisium.keys` first.
+# A tmpfiles.d snippet materialises /root/.ssh/authorized_keys at every boot,
+# which works correctly whether /root is a real dir or a symlink to /var/roothome
+# and applies the right SELinux context via systemd-tmpfiles.
+COPY serisium.keys /usr/share/great-henge/root.authorized_keys
+COPY tmpfiles.d/great-henge-root-ssh.conf /usr/lib/tmpfiles.d/great-henge-root-ssh.conf
 
