@@ -1,11 +1,19 @@
 # VPS
 This repository's pipeline creates a custom bootc image which can be installed to a running VPS via `bootc install to-existing-root`. See [Installing on generic infrastructure](https://docs.fedoraproject.org/en-US/bootc/provisioning-generic/)
 
+# SSH access
+SSH authorized keys for `root` are baked into the image at installtime via the `--root-ssh-authorized-keys` flag.
+
 ## Installation
 Create an single-use Tailscale authkey and insert into the command below.
 
 Sample Ubuntu setup:
+
 ```
+# Fetch SSH keys into root's authorized_keys on the host
+sudo mkdir -p -m 0700 /root/.ssh
+sudo wget -O /root/.ssh/authorized_keys https://github.com/serisium.keys
+
 # Install podman
 sudo apt install -y podman
 
@@ -16,8 +24,10 @@ sudo podman run --rm --privileged \
   -v /:/target \
   -v /dev:/dev \
   -v /var/lib/containers:/var/lib/containers \
+  -v /root/.ssh/authorized_keys:/authorized_keys:ro \
   ghcr.io/serisium/great-henge/vps:latest \
-  bootc install to-existing-root --acknowledge-destructive
+  bootc install to-existing-root --acknowledge-destructive \
+  --root-ssh-authorized-keys=/authorized_keys
 ```
 
 ## Verification
@@ -32,8 +42,6 @@ ls /boot
 cat /boot/loader/entries/*.conf 2>/dev/null || ls /boot/loader/
 ```
 
-## SSH access
-SSH authorized keys for `root` are baked into the image at build time. CI fetches them from <https://github.com/serisium.keys> and a `tmpfiles.d` snippet materialises `/root/.ssh/authorized_keys` (with the correct SELinux context) on every boot. To update the allowed keys: change the GitHub account's keys, then push any commit to `main` that touches `vps/**` to rebuild.
 
 ## Set the tailscale authkey
 ```
