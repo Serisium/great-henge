@@ -1,0 +1,15 @@
+[Unit]
+Description=Tailscale Auto-Authentication
+After=tailscaled.service
+Wants=tailscaled.service
+ConditionPathExists=!/var/lib/tailscale/tailscaled.state
+ConditionPathExists=/etc/tailscale/authkey.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/tailscale/authkey.env
+ExecStart=/usr/bin/tailscale up --authkey=${TAILSCALE_AUTHKEY} --ssh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

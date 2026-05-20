@@ -1,0 +1,25 @@
+FROM quay.io/fedora/fedora-bootc:43
+
+ARG TARGETOS TARGETARCH
+
+# Set hostname
+RUN echo "great-henge" > /etc/hostname
+
+# Install dev tools and services
+RUN dnf install -y \
+    tmux \
+    vim \
+    htop \
+    podman \
+    tailscale \
+    && dnf clean all
+
+# Enable Tailscale daemon to start on boot
+RUN systemctl enable tailscaled.service
+
+# Copy all systemd units
+COPY systemd/*.service /etc/systemd/system/
+
+# Enable the auto-connect service
+RUN systemctl enable tailscale-auth.service
+
