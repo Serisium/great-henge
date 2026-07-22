@@ -19,6 +19,10 @@ Environment=AUTHENTIK_REDIS__HOST=localhost
 Environment=AUTHENTIK_WORKER__PROCESSES=1
 Secret=authentik-pg-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWORD
 Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
+# Blueprints (which consume the bootstrap vars) can apply in either process;
+# keep server and worker env identical.
+Environment=AUTHENTIK_BOOTSTRAP_EMAIL=seri@seri.dev
+Secret=authentik-bootstrap-password,type=env,target=AUTHENTIK_BOOTSTRAP_PASSWORD
 
 Volume=/var/lib/authentik/media:/media:z
 Volume=/var/lib/authentik/templates:/templates:z

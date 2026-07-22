@@ -19,6 +19,10 @@ Environment=AUTHENTIK_REDIS__HOST=localhost
 Environment=AUTHENTIK_WEB__WORKERS=1
 Secret=authentik-pg-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWORD
 Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
+# Consumed on first startup only: sets akadmin's password/email so no
+# interactive initial-setup flow is needed.
+Environment=AUTHENTIK_BOOTSTRAP_EMAIL=seri@seri.dev
+Secret=authentik-bootstrap-password,type=env,target=AUTHENTIK_BOOTSTRAP_PASSWORD
 
 HealthCmd=["ak","healthcheck"]
 HealthInterval=30s

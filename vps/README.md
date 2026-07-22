@@ -40,17 +40,27 @@ namespace, traefik reaches the authentik server at `localhost:9000` via a
 static route in `dynamic_config.yml` — no extra published ports.
 
 - **First boot:** `authentik-config-init.service` creates `/var/lib/authentik/`
-  (`postgres`, `redis`, `media`, `templates`, `certs`) and generates two
-  rootless podman secrets for the pangolin user — `authentik-secret-key` and
-  `authentik-pg-password`. The quadlets inject them as env vars via `Secret=`;
-  the values never exist in the repo or image. Idempotent via the
-  `/var/lib/authentik/.seeded` marker.
+  (`postgres`, `redis`, `media`, `templates`, `certs`) and generates three
+  rootless podman secrets for the pangolin user — `authentik-secret-key`,
+  `authentik-pg-password`, and `authentik-bootstrap-password`. The quadlets
+  inject them as env vars via `Secret=`; the values never exist in the repo or
+  image. Idempotent via the `/var/lib/authentik/.seeded` marker.
 - **Requirements:** DNS `auth.seri.dev` → the VPS public IP. The cert comes
   from the same Let's Encrypt HTTP-01 flow as Pangolin's.
-- **Initial setup:** browse `https://auth.seri.dev/if/flow/initial-setup/` to
-  create the `akadmin` account.
+- **Initial setup:** none needed — authentik consumes
+  `AUTHENTIK_BOOTSTRAP_PASSWORD`/`AUTHENTIK_BOOTSTRAP_EMAIL` on first startup,
+  so `akadmin` is ready immediately. Read the password on the VPS with
+
+  ```
+  cd /tmp && sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 \
+    podman secret inspect --showsecret --format '{{.SecretData}}' \
+    authentik-bootstrap-password
+  ```
+
+  then log in at `https://auth.seri.dev` as `akadmin` (change the password
+  afterwards if you like; the secret is only consumed on first startup).
 - Inspect secrets on the VPS:
-  `sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 podman secret ls`
+  `cd /tmp && sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 podman secret ls`
 
 ## Dev test loop (no GitHub push needed)
 Build on an x86 box with a local registry, then point the VPS at it:
@@ -85,10 +95,15 @@ retries dependency-failed jobs. Start the unit manually
 pattern.
 
 # SSH access
-SSH authorized keys for `root` are baked into the image at installtime via the `--root-ssh-authorized-keys` flag.
+Primary access is **Tailscale SSH**: the host joins the tailnet on first boot
+(`tailscale up --ssh`, using the authkey seeded before the post-install
+reboot), so `tailscale ssh root@great-henge` works from any tailnet device.
+As a non-tailnet fallback, inject public keys into root's `authorized_keys`
+at install time with `--root-ssh-authorized-keys` — no keys are stored in
+this repo or the image.
 
 ## Installation
-Create an single-use Tailscale authkey and insert into the command below.
+Create a single-use Tailscale authkey and insert it into the commands below.
 
 Sample Ubuntu setup:
 

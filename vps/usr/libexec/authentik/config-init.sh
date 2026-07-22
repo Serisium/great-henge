@@ -25,7 +25,9 @@ $AS_PANGOLIN podman unshare chown -R 1000:1000 \
 
 # tr strips openssl's trailing newline: podman stores stdin verbatim, and a
 # newline inside the secret breaks HTTP Authorization headers built from it.
-for s in authentik-secret-key authentik-pg-password; do
+# bootstrap-password becomes akadmin's initial password (consumed by authentik
+# on first startup); read it back with `podman secret inspect --showsecret`.
+for s in authentik-secret-key authentik-pg-password authentik-bootstrap-password; do
     if ! $AS_PANGOLIN podman secret exists "$s"; then
         openssl rand -hex 32 | tr -d "\n" | $AS_PANGOLIN podman secret create "$s" -
     fi

@@ -39,7 +39,10 @@ provisioned by installing that image over an existing root with
   a static route in the seeded `dynamic_config.yml` (`localhost:9000` — same
   pod netns). First boot: `authentik-config-init.service` seeds
   `/var/lib/authentik/` and generates its credentials as rootless podman
-  secrets (see the `podman-secrets` skill).
+  secrets (see the `podman-secrets` skill), including
+  `authentik-bootstrap-password` — akadmin's initial password, consumed via
+  `AUTHENTIK_BOOTSTRAP_PASSWORD` on first startup so no interactive setup
+  flow is needed.
 - `vps/README.md` — provisioning runbook: install command, verification steps,
   Tailscale authkey seeding, Pangolin overview, and the dev test loop.
 - `.github/workflows/build-vps.yml` — GitHub Actions. On pushes to `main` that
