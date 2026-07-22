@@ -1,6 +1,7 @@
+# Wants= (not Requires=): see gerbil.container.
 [Unit]
 After=pangolin.service
-Requires=pangolin.service
+Wants=pangolin.service
 
 [Container]
 ContainerName=traefik
@@ -16,6 +17,8 @@ Volume=/var/lib/pangolin/config/traefik/logs:/var/log/traefik:z
 
 [Service]
 Restart=always
+RestartSec=5
+TimeoutStartSec=900
 
 [Install]
 WantedBy=default.target

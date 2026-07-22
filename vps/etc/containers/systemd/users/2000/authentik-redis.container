@@ -16,6 +16,8 @@ Volume=/var/lib/authentik/redis:/data:z
 
 [Service]
 Restart=always
+RestartSec=5
+TimeoutStartSec=900
 
 [Install]
 WantedBy=default.target

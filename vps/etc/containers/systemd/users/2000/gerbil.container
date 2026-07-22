@@ -1,6 +1,9 @@
+# Wants= (not Requires=): systemd never retries dependency-failed jobs, so
+# with Requires= a slow pangolin start would kill this unit until manually
+# started. With Wants=+After= it starts anyway and Restart= self-heals.
 [Unit]
 After=pangolin.service
-Requires=pangolin.service
+Wants=pangolin.service
 
 [Container]
 ContainerName=gerbil
@@ -17,6 +20,8 @@ Volume=/var/lib/pangolin/config:/var/config:z
 
 [Service]
 Restart=always
+RestartSec=5
+TimeoutStartSec=900
 
 [Install]
 WantedBy=default.target

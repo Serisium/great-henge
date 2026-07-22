@@ -1,6 +1,7 @@
+# Wants= (not Requires=): see gerbil.container.
 [Unit]
 After=authentik-postgres.service authentik-redis.service
-Requires=authentik-postgres.service authentik-redis.service
+Wants=authentik-postgres.service authentik-redis.service
 
 [Container]
 ContainerName=authentik-server
@@ -28,6 +29,8 @@ Volume=/var/lib/authentik/certs:/certs:z
 
 [Service]
 Restart=always
+RestartSec=5
+TimeoutStartSec=900
 
 [Install]
 WantedBy=default.target

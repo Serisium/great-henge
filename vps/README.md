@@ -73,6 +73,17 @@ cd /tmp && sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 podman ps
 journalctl _UID=2000        # user manager + container logs
 ```
 
+(`cd /tmp` matters: root's home is unreadable to pangolin, so `runuser`/`sudo`
+from `/var/roothome` fails with "cannot chdir".)
+
+If a container is missing from `podman ps -a` and its unit is
+"inactive (dead)" with "Dependency failed" in the journal: a `Requires=`
+dependency's first start exceeded its start timeout, and systemd never
+retries dependency-failed jobs. Start the unit manually
+(`systemctl --user start <unit>`). The quadlets use `Wants=` +
+`TimeoutStartSec=900` precisely to avoid this; keep new units on that
+pattern.
+
 # SSH access
 SSH authorized keys for `root` are baked into the image at installtime via the `--root-ssh-authorized-keys` flag.
 

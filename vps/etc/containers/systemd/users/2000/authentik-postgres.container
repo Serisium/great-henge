@@ -18,6 +18,8 @@ Volume=/var/lib/authentik/postgres:/var/lib/postgresql/data:z
 
 [Service]
 Restart=always
+RestartSec=5
+TimeoutStartSec=900
 
 [Install]
 WantedBy=default.target

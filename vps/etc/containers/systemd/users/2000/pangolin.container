@@ -15,6 +15,10 @@ Volume=/var/lib/pangolin/config/letsencrypt:/app/config/letsencrypt:ro,z
 
 [Service]
 Restart=always
+RestartSec=5
+# Cover slow image pulls and app startup; the 90s default start timeout
+# marks the unit failed, which permanently kills units that depend on it.
+TimeoutStartSec=900
 
 [Install]
 WantedBy=default.target

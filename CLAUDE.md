@@ -70,6 +70,10 @@ provisioned by installing that image over an existing root with
   stored as a rootless podman secret, injected via `Secret=` in the quadlet —
   follow `.claude/skills/podman-secrets/SKILL.md`. Never plaintext in the
   repo, the image, or files under `/var/lib`.
+- **Quadlet dependencies use `Wants=` + `After=`, never `Requires=`**, plus
+  `TimeoutStartSec=900`/`RestartSec=5` — systemd never retries
+  dependency-failed jobs, so `Requires=` on a slow-starting container
+  permanently kills the dependent until manually started.
 - **Keep operational secrets out of this repo.** It is published publicly to
   GHCR and meant to be shareable. The live server's IP, SSH/auth details, and
   the Tailscale authkey are not stored here. (Claude: these live in project
