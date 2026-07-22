@@ -26,12 +26,16 @@ AS_PANGOLIN="runuser -u pangolin -- env XDG_RUNTIME_DIR=/run/user/2000"
 install -d -o pangolin -g pangolin -m 0700 /run/user/2000
 
 if ! $AS_PANGOLIN podman secret exists my-secret; then
-    openssl rand -hex 32 | $AS_PANGOLIN podman secret create my-secret -
+    openssl rand -hex 32 | tr -d "\n" | $AS_PANGOLIN podman secret create my-secret -
 fi
 ```
 
 - Generate values with `openssl rand -hex 32`; pipe via stdin (`create ... -`),
   never pass the value as an argument or write it to a temp file.
+- **Always strip the trailing newline** (`tr -d "\n"`): podman stores stdin
+  verbatim, and a newline inside the secret silently corrupts anything built
+  from it — e.g. Go rejects HTTP Authorization headers containing one
+  (authentik's embedded outpost died exactly this way).
 - Make the script idempotent (`podman secret exists`) and gate the service
   with `ConditionPathExists=!<marker>` so it is a no-op after first boot.
 - Order the user manager after the init service with a drop-in at

@@ -7,6 +7,7 @@ RUN dnf install -y \
     htop \
     glibc-langpack-en \
     ncurses-term \
+    zram-generator-defaults \
     podman \
     passt \
     tailscale \

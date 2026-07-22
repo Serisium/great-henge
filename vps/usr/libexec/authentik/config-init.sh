@@ -23,9 +23,11 @@ chown -R pangolin:pangolin "$STATE"
 $AS_PANGOLIN podman unshare chown -R 1000:1000 \
     "$STATE/media" "$STATE/templates" "$STATE/certs"
 
+# tr strips openssl's trailing newline: podman stores stdin verbatim, and a
+# newline inside the secret breaks HTTP Authorization headers built from it.
 for s in authentik-secret-key authentik-pg-password; do
     if ! $AS_PANGOLIN podman secret exists "$s"; then
-        openssl rand -hex 32 | $AS_PANGOLIN podman secret create "$s" -
+        openssl rand -hex 32 | tr -d "\n" | $AS_PANGOLIN podman secret create "$s" -
     fi
 done
 
