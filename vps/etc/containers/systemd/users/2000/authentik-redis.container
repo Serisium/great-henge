@@ -1,0 +1,21 @@
+[Container]
+ContainerName=authentik-redis
+Image=docker.io/library/redis:7-alpine
+
+Pod=services.pod
+
+Exec=--save 60 1
+
+HealthCmd=["redis-cli","ping"]
+HealthInterval=10s
+HealthRetries=15
+HealthTimeout=5s
+Notify=healthy
+
+Volume=/var/lib/authentik/redis:/data:z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

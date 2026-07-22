@@ -1,0 +1,11 @@
+[Unit]
+Description=Seed authentik state and secrets on first boot
+ConditionPathExists=!/var/lib/authentik/.seeded
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/authentik/config-init.sh
+
+[Install]
+WantedBy=multi-user.target

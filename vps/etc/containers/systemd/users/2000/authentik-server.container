@@ -1,0 +1,33 @@
+[Unit]
+After=authentik-postgres.service authentik-redis.service
+Requires=authentik-postgres.service authentik-redis.service
+
+[Container]
+ContainerName=authentik-server
+Image=ghcr.io/goauthentik/server:2026.2
+
+Pod=services.pod
+
+Exec=server
+
+Environment=AUTHENTIK_POSTGRESQL__HOST=localhost
+Environment=AUTHENTIK_POSTGRESQL__USER=authentik
+Environment=AUTHENTIK_POSTGRESQL__NAME=authentik
+Environment=AUTHENTIK_REDIS__HOST=localhost
+Secret=authentik-pg-password,type=env,target=AUTHENTIK_POSTGRESQL__PASSWORD
+Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
+
+HealthCmd=["ak","healthcheck"]
+HealthInterval=30s
+HealthRetries=20
+HealthTimeout=30s
+
+Volume=/var/lib/authentik/media:/media:z
+Volume=/var/lib/authentik/templates:/templates:z
+Volume=/var/lib/authentik/certs:/certs:z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -10,8 +10,8 @@ Containerfile — in particular `/etc/hostname`, which podman bind-mounts during
 The image runs [Pangolin](https://docs.pangolin.net/) (`pangolin` + `gerbil` +
 `traefik` in one pod) as the **rootless** user `pangolin` (uid/gid 2000) via
 Podman quadlets baked into `/etc/containers/systemd/users/2000/`. It serves the
-dashboard at `auth.seri.dev` (base domain `seri.dev`) and terminates WireGuard
-tunnels from remote Newt clients.
+dashboard at `portal.seri.dev` (base domain `seri.dev`) and terminates
+WireGuard tunnels from remote Newt clients.
 
 - Rootless processes can't bind ports <1024, so the pod publishes 8080/8443 and
   an nftables rule (`/etc/nftables/pangolin.nft`) redirects 80→8080, 443→8443.
@@ -23,11 +23,31 @@ tunnels from remote Newt clients.
   `server.secret` (`openssl rand -hex 32`) — the secret never exists in the
   repo or image. The service is a no-op once `config.yml` exists. The
   `pangolin` user lingers (tmpfiles.d), so the pod starts at boot with no login.
-- **Requirements:** DNS `auth.seri.dev` → the VPS public IP, and TCP 80/443 +
-  UDP 51820/21820 open. Let's Encrypt issuance (HTTP-01) begins working once
+- **Requirements:** DNS `portal.seri.dev` → the VPS public IP, and TCP 80/443
+  + UDP 51820/21820 open. Let's Encrypt issuance (HTTP-01) begins working once
   DNS resolves.
 - **Initial setup:** `podman logs pangolin` (as the pangolin user) prints a
-  one-time setup token; use it at `https://auth.seri.dev/auth/initial-setup`.
+  one-time setup token; use it at `https://portal.seri.dev/auth/initial-setup`.
+
+# Authentik
+The image also runs [authentik](https://goauthentik.io/) (`server` + `worker` +
+`postgres` + `redis`) in the same rootless `services` pod, served by Pangolin's
+traefik at `auth.seri.dev`. Because the containers share the pod's network
+namespace, traefik reaches the authentik server at `localhost:9000` via a
+static route in `dynamic_config.yml` — no extra published ports.
+
+- **First boot:** `authentik-config-init.service` creates `/var/lib/authentik/`
+  (`postgres`, `redis`, `media`, `templates`, `certs`) and generates two
+  rootless podman secrets for the pangolin user — `authentik-secret-key` and
+  `authentik-pg-password`. The quadlets inject them as env vars via `Secret=`;
+  the values never exist in the repo or image. Idempotent via the
+  `/var/lib/authentik/.seeded` marker.
+- **Requirements:** DNS `auth.seri.dev` → the VPS public IP. The cert comes
+  from the same Let's Encrypt HTTP-01 flow as Pangolin's.
+- **Initial setup:** browse `https://auth.seri.dev/if/flow/initial-setup/` to
+  create the `akadmin` account.
+- Inspect secrets on the VPS:
+  `sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 podman secret ls`
 
 ## Dev test loop (no GitHub push needed)
 Build on an x86 box with a local registry, then point the VPS at it:

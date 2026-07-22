@@ -17,9 +17,11 @@ RUN dnf install -y \
 COPY etc/ /etc/
 COPY usr/ /usr/
 
-RUN chmod +x /usr/libexec/pangolin/config-init.sh && \
+RUN chmod +x /usr/libexec/pangolin/config-init.sh \
+    /usr/libexec/authentik/config-init.sh && \
     systemctl enable \
     tailscaled.service \
     tailscale-auth.service \
     nftables.service \
-    pangolin-config-init.service
+    pangolin-config-init.service \
+    authentik-config-init.service

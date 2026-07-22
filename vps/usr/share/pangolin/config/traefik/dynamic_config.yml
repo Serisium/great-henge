@@ -10,7 +10,7 @@ http:
 
   routers:
     main-app-router-redirect:
-      rule: "Host(`auth.seri.dev`)"
+      rule: "Host(`portal.seri.dev`)"
       service: next-service
       entryPoints:
         - web
@@ -19,7 +19,7 @@ http:
         - badger
 
     next-router:
-      rule: "Host(`auth.seri.dev`) && !PathPrefix(`/api/v1`)"
+      rule: "Host(`portal.seri.dev`) && !PathPrefix(`/api/v1`)"
       service: next-service
       entryPoints:
         - websecure
@@ -29,7 +29,7 @@ http:
         certResolver: letsencrypt
 
     api-router:
-      rule: "Host(`auth.seri.dev`) && PathPrefix(`/api/v1`)"
+      rule: "Host(`portal.seri.dev`) && PathPrefix(`/api/v1`)"
       service: api-service
       entryPoints:
         - websecure
@@ -39,12 +39,28 @@ http:
         certResolver: letsencrypt
 
     ws-router:
-      rule: "Host(`auth.seri.dev`)"
+      rule: "Host(`portal.seri.dev`)"
       service: api-service
       entryPoints:
         - websecure
       middlewares:
         - badger
+      tls:
+        certResolver: letsencrypt
+
+    authentik-router-redirect:
+      rule: "Host(`auth.seri.dev`)"
+      service: authentik-service
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+    authentik-router:
+      rule: "Host(`auth.seri.dev`)"
+      service: authentik-service
+      entryPoints:
+        - websecure
       tls:
         certResolver: letsencrypt
 
@@ -58,6 +74,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:3000"
+
+    # authentik runs in the same pod, so it shares the pod's network namespace.
+    authentik-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:9000"
 
 tcp:
   serversTransports:
