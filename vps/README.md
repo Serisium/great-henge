@@ -167,12 +167,57 @@ cat /boot/loader/entries/*.conf 2>/dev/null || ls /boot/loader/
 sudo reboot
 ```
 
-## 5. After first boot
-- The host joins the tailnet automatically; `tailscale ssh root@great-henge`
-  should work (fallback: `ssh root@<IP>` via the install-time keys).
-- Point DNS A records for `portal.seri.dev` and `auth.seri.dev` at the VPS
-  IP; Let's Encrypt certs issue automatically once they resolve.
-- Pangolin and authentik seed themselves on first boot (see their sections
-  above): fetch the Pangolin setup token from `podman logs pangolin`, and
-  read authentik's `akadmin` password from the
-  `authentik-bootstrap-password` secret.
+## First boot setup
+Everything below happens once, after the reboot into the image.
+
+### Ports & DNS
+- Open (provider firewall, if any): **TCP 80/443** (web + Let's Encrypt),
+  **UDP 51820/21820** (WireGuard for Newt sites), TCP 22 only if you want the
+  direct-IP SSH fallback.
+- Create DNS A records → the VPS IP: **`portal.seri.dev`** (Pangolin) and
+  **`auth.seri.dev`** (authentik). Traefik retries ACME automatically, so
+  real certs appear within a minute or two of DNS resolving; until then it
+  serves a self-signed placeholder.
+
+### Sanity-check the stack
+```
+tailscale ssh root@great-henge      # or: ssh root@<IP> (fallback keys)
+cd /tmp && sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 podman ps
+```
+Expect 8 containers (`services-infra`, `pangolin`, `gerbil`, `traefik`, and
+the four `authentik-*`), with the health-checked ones marked `(healthy)`.
+First boot pulls ~2 GB of images — allow several minutes before judging.
+`swapon --show` should list `/dev/zram0`.
+
+### Authentik login — no setup wizard
+Do **not** visit `/if/flow/initial-setup/` (it denies; it isn't needed).
+`akadmin` was bootstrapped on first startup — read its password:
+```
+cd /tmp && sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 \
+  podman secret inspect --showsecret --format '{{.SecretData}}' \
+  authentik-bootstrap-password
+```
+Log in at `https://auth.seri.dev` as `akadmin`. Changing the password
+afterwards is safe — the secret is only consumed on the first startup.
+
+### Pangolin setup — one-time token
+```
+cd /tmp && sudo -u pangolin XDG_RUNTIME_DIR=/run/user/2000 \
+  podman logs pangolin 2>&1 | grep -iA2 token
+```
+Use the token at `https://portal.seri.dev/auth/initial-setup` to create the
+admin account — the only account-creation path, since public signup is
+disabled (`disable_signup_without_invite: true`).
+
+### Secrets inventory
+`podman secret ls` (as the pangolin user) shows `authentik-secret-key`,
+`authentik-pg-password`, and `authentik-bootstrap-password` — only the last
+is ever needed interactively. Pangolin's `server.secret` is the exception to
+the podman-secrets pattern: it lives in
+`/var/lib/pangolin/config/config.yml` (0600), generated on first boot.
+
+### Confirm from the outside
+```
+curl -sSI https://portal.seri.dev   # 200/redirect, LE cert, Pangolin
+curl -sSI https://auth.seri.dev     # 302 into authentik login, LE cert
+```
