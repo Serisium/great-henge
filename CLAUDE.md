@@ -26,12 +26,18 @@ provisioned by installing that image over an existing root with
   writing it inline silently does nothing; it must be a `COPY`'d file.
 - **Pangolin** (`pangolin` + `gerbil` + `traefik`, one pod) runs as rootless
   user `pangolin` (uid 2000) via quadlets in
-  `/etc/containers/systemd/users/2000/`, serving `auth.seri.dev` (base domain
+  `/etc/containers/systemd/users/2000/`, serving `portal.seri.dev` (base domain
   `seri.dev`). Rootless can't bind <1024, so the pod publishes 8080/8443 and
   nftables redirects 80/443 to them. First boot: `pangolin-config-init.service`
   seeds `/var/lib/pangolin/config/` from `/usr/share/pangolin/config/` and
   generates `server.secret` (never in repo/image). The `wireguard`/`tun`
   modules are host-loaded via modules-load.d; the user lingers via tmpfiles.d.
+- **Authentik** (`server` + `worker` + `postgres` + `redis`) runs in the same
+  rootless `services` pod, served by Pangolin's traefik at `auth.seri.dev` via
+  a static route in the seeded `dynamic_config.yml` (`localhost:9000` — same
+  pod netns). First boot: `authentik-config-init.service` seeds
+  `/var/lib/authentik/` and generates its credentials as rootless podman
+  secrets (see the `podman-secrets` skill).
 - `vps/README.md` — provisioning runbook: install command, verification steps,
   Tailscale authkey seeding, Pangolin overview, and the dev test loop.
 - `.github/workflows/build-vps.yml` — GitHub Actions. On pushes to `main` that
@@ -53,6 +59,15 @@ provisioned by installing that image over an existing root with
 
 ## Conventions & guardrails
 
+- **Podman only — NEVER install or use Docker.** No docker CLI, daemon,
+  docker-compose, or Docker-specific tooling, in the image or on any host.
+  Everything container-shaped goes through podman (`podman build`/`run`,
+  quadlets, `podman secret`). Pulling images *from* `docker.io` is fine.
+- **Runtime service credentials are podman secrets.** Any secret a container
+  needs (DB password, signing key, API token) is generated on first boot and
+  stored as a rootless podman secret, injected via `Secret=` in the quadlet —
+  follow `.claude/skills/podman-secrets/SKILL.md`. Never plaintext in the
+  repo, the image, or files under `/var/lib`.
 - **Keep operational secrets out of this repo.** It is published publicly to
   GHCR and meant to be shareable. The live server's IP, SSH/auth details, and
   the Tailscale authkey are not stored here. (Claude: these live in project
@@ -70,6 +85,8 @@ provisioned by installing that image over an existing root with
   `systemctl enable` it in the Containerfile.
 - Add/change any config file: place it at its real path under `vps/etc/` or
   `vps/usr/` — never write file contents inline in the Containerfile.
+- Add a service credential: follow the `podman-secrets` skill (first-boot
+  generation + `Secret=` in the quadlet).
 - Test image changes on the live host without pushing to GitHub: build and
   push to a dev registry, then `bootc switch`/`bootc upgrade` on the VPS
   (see `vps/README.md` "Dev test loop"; registry details in project memory).
