@@ -5,6 +5,8 @@ RUN dnf install -y \
     tmux \
     vim \
     htop \
+    glibc-langpack-en \
+    ncurses-term \
     podman \
     passt \
     tailscale \
@@ -16,6 +18,11 @@ RUN dnf install -y \
 # Mirror config trees into the image (after dnf so packaged defaults lose)
 COPY etc/ /etc/
 COPY usr/ /usr/
+
+# Ghostty sets TERM=xterm-ghostty; ncurses-term only ships the entry as
+# "ghostty", so alias it. (A repo symlink won't survive COPY: podman drops
+# dangling symlinks from the build context.)
+RUN ln -s ../g/ghostty /usr/share/terminfo/x/xterm-ghostty
 
 RUN chmod +x /usr/libexec/pangolin/config-init.sh \
     /usr/libexec/authentik/config-init.sh && \

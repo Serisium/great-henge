@@ -24,6 +24,8 @@ provisioned by installing that image over an existing root with
   the Pangolin quadlets, nftables rules, sysusers/subuid, tmpfiles.
   Gotcha: `/etc/hostname` is bind-mounted by podman during `RUN` steps —
   writing it inline silently does nothing; it must be a `COPY`'d file.
+  Gotcha: symlinks whose target only exists in the image are silently dropped
+  from the build context — create those via `ln -s` in the Containerfile.
 - **Pangolin** (`pangolin` + `gerbil` + `traefik`, one pod) runs as rootless
   user `pangolin` (uid 2000) via quadlets in
   `/etc/containers/systemd/users/2000/`, serving `portal.seri.dev` (base domain

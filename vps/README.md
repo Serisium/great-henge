@@ -4,7 +4,10 @@ This repository's pipeline creates a custom bootc image which can be installed t
 The image layout mirrors the target filesystem: everything under `etc/` and
 `usr/` is `COPY`'d into the image verbatim. Don't write files inline in the
 Containerfile — in particular `/etc/hostname`, which podman bind-mounts during
-`RUN` steps, so writes to it silently never reach the image.
+`RUN` steps, so writes to it silently never reach the image. Also don't put
+symlinks in the mirrored trees whose targets only exist in the image (e.g.
+into dnf-installed paths): podman silently drops dangling symlinks from the
+build context — create those with `ln -s` in the Containerfile instead.
 
 # Pangolin
 The image runs [Pangolin](https://docs.pangolin.net/) (`pangolin` + `gerbil` +
