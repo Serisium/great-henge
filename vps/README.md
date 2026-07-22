@@ -96,26 +96,31 @@ pattern.
 
 # SSH access
 Primary access is **Tailscale SSH**: the host joins the tailnet on first boot
-(`tailscale up --ssh`, using the authkey seeded before the post-install
-reboot), so `tailscale ssh root@great-henge` works from any tailnet device.
-As a non-tailnet fallback, inject public keys into root's `authorized_keys`
-at install time with `--root-ssh-authorized-keys` — no keys are stored in
-this repo or the image.
+(`tailscale up --ssh`, using the authkey seeded during provisioning), so
+`tailscale ssh root@great-henge` works from any tailnet device. As a
+non-tailnet fallback, inject public keys into root's `authorized_keys` at
+install time with `--root-ssh-authorized-keys` — no keys are stored in this
+repo or the image.
 
-## Installation
-Create a single-use Tailscale authkey and insert it into the commands below.
+# Provisioning
+Steps 1–4 run **on the stock OS of the fresh VPS** (Ubuntu shown). During
+these steps you are still on the old root filesystem: the installed bootc
+deployment has its own separate `/etc`, and everything written to the old
+root remains visible to the new OS at `/sysroot` after the reboot.
 
-Sample Ubuntu setup:
+Prerequisite: create a single-use Tailscale authkey for step 2.
+
+## 1. Install the image
 
 ```
-# Fetch SSH keys into root's authorized_keys on the host
+# Fallback SSH keys for root (Tailscale SSH is the primary access path)
 sudo mkdir -p -m 0700 /root/.ssh
 sudo wget -O /root/.ssh/authorized_keys https://github.com/serisium.keys
 
 # Install podman
 sudo apt install -y podman
 
-# Install the VPS image
+# Install the VPS image over the running root
 sudo podman run --rm --privileged \
   --pid=host \
   --security-opt label=type:unconfined_t \
@@ -128,36 +133,46 @@ sudo podman run --rm --privileged \
   --root-ssh-authorized-keys=/authorized_keys
 ```
 
-## Verification
-The following should print the following mounts: `/root -> var/roothome`, `/home -> var/home`
-```
-sudo podman run --rm ghcr.io/serisium/great-henge/vps:latest ls -ld /root /home
-```
+## 2. Seed the tailscale authkey
 
-Verify the bootc /boot directory exists
-```
-ls /boot
-cat /boot/loader/entries/*.conf 2>/dev/null || ls /boot/loader/
-```
-
-
-## Set the tailscale authkey
 ```
 sudo install -d -m 0700 /etc/tailscale
 echo "TAILSCALE_AUTHKEY=tskey-..." | sudo tee /etc/tailscale/authkey.env >/dev/null
 sudo chmod 0600 /etc/tailscale/authkey.env
 ```
 
-This writes to the *old* root filesystem — the freshly installed bootc
-deployment has its own separate `/etc`. That's expected:
-`bootc install to-existing-root` keeps the old root mounted at `/sysroot`,
-and on first boot `tailscale-authkey-import.service` copies the key from
+This intentionally writes to the **old** root's `/etc` — on first boot,
+`tailscale-authkey-import.service` copies it from
 `/sysroot/etc/tailscale/authkey.env` into the deployment's `/etc` before
-`tailscale-auth.service` runs. If you skipped this step before rebooting,
-write the file directly on the booted system instead and
-`systemctl start tailscale-auth.service`.
+`tailscale-auth.service` joins the tailnet. (Forgot this step before
+rebooting? On the booted system either write `/etc/tailscale/authkey.env`
+directly or run the `install -D` from `/sysroot` yourself, then
+`systemctl start tailscale-auth.service`.)
 
-# Reboot
+## 3. Verify the install (optional)
+The following should print the mounts `/root -> var/roothome`,
+`/home -> var/home`:
+```
+sudo podman run --rm ghcr.io/serisium/great-henge/vps:latest ls -ld /root /home
+```
+
+Verify the bootc /boot directory exists:
+```
+ls /boot
+cat /boot/loader/entries/*.conf 2>/dev/null || ls /boot/loader/
+```
+
+## 4. Reboot into the image
 ```
 sudo reboot
 ```
+
+## 5. After first boot
+- The host joins the tailnet automatically; `tailscale ssh root@great-henge`
+  should work (fallback: `ssh root@<IP>` via the install-time keys).
+- Point DNS A records for `portal.seri.dev` and `auth.seri.dev` at the VPS
+  IP; Let's Encrypt certs issue automatically once they resolve.
+- Pangolin and authentik seed themselves on first boot (see their sections
+  above): fetch the Pangolin setup token from `podman logs pangolin`, and
+  read authentik's `akadmin` password from the
+  `authentik-bootstrap-password` secret.

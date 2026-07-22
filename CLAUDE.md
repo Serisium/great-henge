@@ -20,8 +20,11 @@ provisioned by installing that image over an existing root with
 - `vps/etc/`, `vps/usr/` — mirror of the image filesystem, `COPY`'d in
   verbatim (`COPY etc/ /etc/`, `COPY usr/ /usr/`, after `dnf` so packaged
   defaults lose). All config lives here as real files: the hostname,
-  `tailscale-auth.service` (oneshot `tailscale up --ssh` on first boot),
-  the Pangolin quadlets, nftables rules, sysusers/subuid, tmpfiles.
+  `tailscale-auth.service` (oneshot `tailscale up --ssh` on first boot;
+  `tailscale-authkey-import.service` first copies the authkey seeded on the
+  pre-bootc root from `/sysroot`, since `to-existing-root` gives the
+  deployment its own `/etc`), the Pangolin quadlets, nftables rules,
+  sysusers/subuid, tmpfiles.
   Gotcha: `/etc/hostname` is bind-mounted by podman during `RUN` steps —
   writing it inline silently does nothing; it must be a `COPY`'d file.
   Gotcha: symlinks whose target only exists in the image are silently dropped
