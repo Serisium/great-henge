@@ -1,22 +1,25 @@
 FROM quay.io/fedora/fedora-bootc:43
 
-# Set hostname
-RUN echo "great-henge" > /etc/hostname
-
 # Install dev tools and services
 RUN dnf install -y \
     tmux \
     vim \
     htop \
     podman \
+    passt \
     tailscale \
+    nftables \
+    openssl \
+    wireguard-tools \
     && dnf clean all
 
-# Enable Tailscale daemon to start on boot
-RUN systemctl enable tailscaled.service
+# Mirror config trees into the image (after dnf so packaged defaults lose)
+COPY etc/ /etc/
+COPY usr/ /usr/
 
-# Copy all systemd units
-COPY systemd/*.service /etc/systemd/system/
-
-# Enable the auto-connect service
-RUN systemctl enable tailscale-auth.service
+RUN chmod +x /usr/libexec/pangolin/config-init.sh && \
+    systemctl enable \
+    tailscaled.service \
+    tailscale-auth.service \
+    nftables.service \
+    pangolin-config-init.service

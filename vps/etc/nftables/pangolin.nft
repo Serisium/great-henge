@@ -1,0 +1,8 @@
+# Redirect privileged web ports to the rootless Pangolin pod's published ports.
+table inet pangolin {
+	chain prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+		fib daddr type local tcp dport 80 redirect to :8080
+		fib daddr type local tcp dport 443 redirect to :8443
+	}
+}

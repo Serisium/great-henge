@@ -1,0 +1,11 @@
+[Unit]
+Description=Seed Pangolin configuration on first boot
+ConditionPathExists=!/var/lib/pangolin/config/config.yml
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/pangolin/config-init.sh
+
+[Install]
+WantedBy=multi-user.target

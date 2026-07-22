@@ -1,0 +1,21 @@
+[Unit]
+Description=Pangolin Pod
+Wants=network-online.target
+After=network-online.target
+
+[Pod]
+PodName=services
+
+Network=pasta
+
+PublishPort=51820:51820/udp
+PublishPort=21820:21820/udp
+# Rootless cannot bind <1024; nftables redirects 443->8443 and 80->8080.
+PublishPort=8443:443
+PublishPort=8080:80
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
