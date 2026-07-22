@@ -1,7 +1,7 @@
 [Unit]
 Description=Tailscale Auto-Authentication
-After=tailscaled.service
-Wants=tailscaled.service
+After=tailscaled.service tailscale-authkey-import.service
+Wants=tailscaled.service tailscale-authkey-import.service
 ConditionPathExists=!/var/lib/tailscale/tailscaled.state
 ConditionPathExists=/etc/tailscale/authkey.env
 

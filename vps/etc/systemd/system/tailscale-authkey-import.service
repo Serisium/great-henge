@@ -1,0 +1,17 @@
+[Unit]
+Description=Import Tailscale authkey from the pre-bootc root
+# `bootc install to-existing-root` keeps the original root filesystem mounted
+# at /sysroot; the provisioning runbook writes the authkey there before the
+# first boot into this image. Copy it into the deployment's /etc so
+# tailscale-auth.service can consume it.
+ConditionPathExists=!/etc/tailscale/authkey.env
+ConditionPathExists=/sysroot/etc/tailscale/authkey.env
+Before=tailscale-auth.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/install -D -m 0600 /sysroot/etc/tailscale/authkey.env /etc/tailscale/authkey.env
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

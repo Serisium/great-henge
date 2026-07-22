@@ -148,6 +148,15 @@ echo "TAILSCALE_AUTHKEY=tskey-..." | sudo tee /etc/tailscale/authkey.env >/dev/n
 sudo chmod 0600 /etc/tailscale/authkey.env
 ```
 
+This writes to the *old* root filesystem — the freshly installed bootc
+deployment has its own separate `/etc`. That's expected:
+`bootc install to-existing-root` keeps the old root mounted at `/sysroot`,
+and on first boot `tailscale-authkey-import.service` copies the key from
+`/sysroot/etc/tailscale/authkey.env` into the deployment's `/etc` before
+`tailscale-auth.service` runs. If you skipped this step before rebooting,
+write the file directly on the booted system instead and
+`systemctl start tailscale-auth.service`.
+
 # Reboot
 ```
 sudo reboot

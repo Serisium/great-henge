@@ -30,6 +30,7 @@ RUN chmod +x /usr/libexec/pangolin/config-init.sh \
     systemctl enable \
     tailscaled.service \
     tailscale-auth.service \
+    tailscale-authkey-import.service \
     nftables.service \
     pangolin-config-init.service \
     authentik-config-init.service
