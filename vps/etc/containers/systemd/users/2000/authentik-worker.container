@@ -24,6 +24,14 @@ Secret=authentik-secret-key,type=env,target=AUTHENTIK_SECRET_KEY
 Environment=AUTHENTIK_BOOTSTRAP_EMAIL=seri@seri.dev
 Secret=authentik-bootstrap-password,type=env,target=AUTHENTIK_BOOTSTRAP_PASSWORD
 
+# The 2026.5+ worker entrypoint binds the same default listen addresses as
+# the server; in the shared pod netns it races the server for :9000 (traefik's
+# upstream) and wins, serving empty 200s. Keep every worker listener off the
+# server's ports.
+Environment=AUTHENTIK_LISTEN__HTTP=[::]:9001
+Environment=AUTHENTIK_LISTEN__HTTPS=[::]:9444
+Environment=AUTHENTIK_LISTEN__METRICS=[::]:9301
+
 Volume=/var/lib/authentik/media:/media:z
 Volume=/var/lib/authentik/templates:/templates:z
 Volume=/var/lib/authentik/certs:/certs:z
