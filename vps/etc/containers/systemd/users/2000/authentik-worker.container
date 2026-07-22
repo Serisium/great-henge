@@ -5,7 +5,7 @@ Wants=authentik-postgres.service authentik-redis.service
 
 [Container]
 ContainerName=authentik-worker
-Image=ghcr.io/goauthentik/server:2026.2
+Image=ghcr.io/goauthentik/server:2026.5.6
 
 Pod=services.pod
 
